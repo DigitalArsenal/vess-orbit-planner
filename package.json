@@ -16,6 +16,6 @@
     "vite": "^5.3.4"
   },
   "dependencies": {
-    "orbpro": "^1.118.31"
+    "orbpro": "^1.118.32"
   }
 }
