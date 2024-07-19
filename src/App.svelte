@@ -336,7 +336,7 @@
       on:keypress={updateURLParams}
       type="text"
       maxlength="25"
-      style="border-radius:5px;color:white;text-align:center;padding:5px"
+      style="border-radius:5px;color:white;text-align:center;padding:5px;width:80%;margin:auto"
       bind:value={name} />
   </label>
   {#each Object.keys(attributes) as key}
