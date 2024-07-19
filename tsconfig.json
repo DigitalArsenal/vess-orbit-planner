@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "ESNext",
+      "allowJs": true,
+      "checkJs": true,
+      "baseUrl": ".",
+      "paths": {
+        "orbpro": ["./types/OrbPro.d.ts"],
+        "*": ["./node_modules/*", "./types/*"]
+      }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules"]
+  }
