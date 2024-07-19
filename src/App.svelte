@@ -97,8 +97,12 @@
     satDataSource.entities.removeAll();
 
     if (useECCENTRICITY) {
-      perigee = (apogee * (1 - ECCENTRICITY)) / (1 + ECCENTRICITY);
+      perigee = Math.max(
+        (apogee * (1 - ECCENTRICITY)) / (1 + ECCENTRICITY),
+        0.01
+      );
     }
+
     if (apogee < perigee) {
       perigee = apogee;
       updateOrbit();
@@ -334,7 +338,7 @@
     padding: 10px;
     border-radius: 5px;
     width: 15vw;
-    max-width:200px;
+    max-width: 200px;
     min-width: 150px;
     font-size: 0.8rem;
   }
@@ -357,5 +361,4 @@
     display: block;
     margin-bottom: 10px;
   }
-
 </style>
