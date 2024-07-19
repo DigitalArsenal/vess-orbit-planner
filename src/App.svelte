@@ -57,6 +57,7 @@
     },
   };
 
+  let jsonOMM;
   let SAT;
   let coverage = true;
   let name =
@@ -201,7 +202,7 @@
       return;
     }
 
-    const newOMM = await Analysis.calculateMeanElements(
+    jsonOMM = await Analysis.calculateMeanElements(
       1,
       attributes.apogee.value,
       attributes.perigee.value,
@@ -223,7 +224,7 @@
         id: new Date().getTime().toString(),
         point: { pixelSize: 10, color: Color.WHITE },
       },
-      newOMM
+      jsonOMM
     );
     SAT.showOrbit({ show: true });
     if (coverage) {
@@ -331,25 +332,27 @@
     style="user-select:none;text-align:left;display:flex;gap:5px;align-items:center;justify-items:center">
     <div>NAME</div>
     <input
+      autocomplete="off"
       on:keypress={updateURLParams}
       type="text"
       maxlength="25"
-      style="color:white;text-align:center;padding:5px"
+      style="border-radius:5px;color:white;text-align:center;padding:5px"
       bind:value={name} />
   </label>
   {#each Object.keys(attributes) as key}
-    <label style="text-align:left">
-      {attributes[key].description}
-      {#if key !== "use_eccentricity"}
-        <button class="info-button" on:click={() => openModal(key)}>?</button>
-      {/if}
-      {#if key === "use_eccentricity"}
+    <label style="text-align:left;user-select:none">
+      {#if key === "eccentricity"}
         <input
           style="position:relative;top:2px"
           type="checkbox"
-          bind:checked={attributes[key].value}
+          bind:checked={attributes["use_eccentricity"].value}
           on:change={updateOrbit} />
-      {:else if key === "eccentricity"}
+      {/if}
+      {#if key !== "use_eccentricity"}
+        {attributes[key].description}
+        <button class="info-button" on:click={() => openModal(key)}>?</button>
+      {/if}
+      {#if key === "eccentricity"}
         <div style="display:flex;gap:5px">
           {#if attributes.use_eccentricity.value}
             <input
@@ -386,7 +389,7 @@
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
-      {:else}
+      {:else if key !== "use_eccentricity"}
         <div style="display:flex;gap:5px">
           <input
             style="width:50%"
@@ -436,6 +439,21 @@
       type="checkbox"
       bind:checked={coverage}
       on:change={updateOrbit} />
+  </div>
+  <hr />
+  <div style="display:flex;margin-top:15px">
+    <button
+      style="text-align:center;width:100%;background:#333333;color:white;padding:5px; border-radius:5px;margin:auto;width:100%"
+      on:click={() => {
+        const jsonStr = JSON.stringify(jsonOMM, null, 4);
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = jsonStr;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempTextArea);
+        alert("OMM copied to clipboard");
+      }}>Copy OMM</button>
   </div>
 </div>
 
