@@ -20,7 +20,20 @@
   } from "orbpro";
   import "./style.css";
   import "orbpro/style/widgets.css";
+  import {
+    uniqueNamesGenerator,
+    adjectives,
+    animals,
+  } from "unique-names-generator";
 
+  const customConfig = {
+    dictionaries: [adjectives, animals],
+    separator: "-",
+    length: 2,
+  };
+
+  const satelliteName = uniqueNamesGenerator(customConfig);
+  console.log(satelliteName);
   export let viewer;
   export let dynamicTimeline;
   export let satDataSource;
@@ -46,7 +59,9 @@
 
   let SAT;
   let coverage = true;
-  let name = getParameterByName("name") || "NEW-SAT";
+  let name =
+    getParameterByName("name") ||
+    uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
 
   function getParameterByName(name) {
     const url = window.location.href;
@@ -63,7 +78,11 @@
     for (const attr in attributes) {
       params.set(attr, attributes[attr].value.toString());
     }
-    params.set("name", name);
+    if (name) {
+      params.set("name", name);
+    } else {
+      params.delete("name");
+    }
     window.history.replaceState(
       {},
       "",
@@ -309,7 +328,7 @@
 
 <div class="controls">
   <label
-    style="text-align:left;display:flex;gap:5px;align-items:center;justify-items:center">
+    style="user-select:none;text-align:left;display:flex;gap:5px;align-items:center;justify-items:center">
     <div>NAME</div>
     <input
       on:keypress={updateURLParams}
@@ -321,10 +340,12 @@
   {#each Object.keys(attributes) as key}
     <label style="text-align:left">
       {attributes[key].description}
-      <button class="info-button" on:click={() => openModal(key)}>?</button>
+      {#if key !== "use_eccentricity"}
+        <button class="info-button" on:click={() => openModal(key)}>?</button>
+      {/if}
       {#if key === "use_eccentricity"}
-        <br />
         <input
+          style="position:relative;top:2px"
           type="checkbox"
           bind:checked={attributes[key].value}
           on:change={updateOrbit} />
