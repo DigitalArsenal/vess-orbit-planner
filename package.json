@@ -19,6 +19,6 @@
     "vite-plugin-singlefile": "^2.0.2"
   },
   "dependencies": {
-    "orbpro": "^1.118.36"
+    "orbpro": "^1.118.37"
   }
 }
