@@ -334,7 +334,8 @@
     padding: 10px;
     border-radius: 5px;
     width: 15vw;
-    min-width: 200px;
+    max-width:200px;
+    min-width: 150px;
     font-size: 0.8rem;
   }
 
