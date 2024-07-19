@@ -24,6 +24,7 @@
   export let viewer;
   export let dynamicTimeline;
   export let satDataSource;
+  export let debugPrimitive;
 
   function getParameterByName(name) {
     const url = window.location.href;
@@ -66,6 +67,7 @@
     getParameterByName("use_eccentricity") === "true" || false;
   let ECCENTRICITY = parseFloat(getParameterByName("eccentricity")) || 0.01;
   let EPOCH = getParameterByName("epoch") || "2024-03-20T03:06:00.000Z";
+  let debugPrimitiveEnabled = true;
 
   const options = {
     id: "25544",
@@ -136,27 +138,41 @@
 
   function addReferenceFramePrimitives() {
     try {
-      const fixedFrameToJ2000 = Transforms.computeIcrfToFixedMatrix(
-        JulianDate.fromIso8601(EPOCH)
-      );
-      const modelMatrix = Matrix4.fromRotationTranslation(
-        Matrix3.multiply(Matrix3.IDENTITY, fixedFrameToJ2000, new Matrix3()),
-        Cartesian3.ZERO
-      );
-      console.log(modelMatrix);
-      viewer.scene.primitives.add(
-        new DebugModelMatrixPrimitive({
-          modelMatrix: modelMatrix,
-          length: 30000000.0,
-          width: 4.0,
-        })
-      );
+      const modelMatrixCallback = () => {
+        const currentTime = viewer.clock.currentTime;
+        const fixedFrameToJ2000 =
+          Transforms.computeIcrfToFixedMatrix(currentTime);
+        return Matrix4.fromRotationTranslation(
+          Matrix3.multiply(Matrix3.IDENTITY, fixedFrameToJ2000, new Matrix3()),
+          Cartesian3.ZERO
+        );
+      };
+
+      debugPrimitive = new DebugModelMatrixPrimitive({
+        modelMatrix: modelMatrixCallback(),
+        length: 30000000.0,
+        width: 4.0,
+      });
+
+      viewer.scene.primitives.add(debugPrimitive);
+      viewer.clock.onTick.addEventListener(() => {
+        debugPrimitive.modelMatrix = modelMatrixCallback();
+      });
     } catch (e) {
       setTimeout(() => {
         addReferenceFramePrimitives();
       }, 1000);
     }
   }
+
+  function toggleDebugPrimitive() {
+    if (debugPrimitiveEnabled) {
+      addReferenceFramePrimitives();
+    } else {
+      viewer.scene.primitives.remove(debugPrimitive);
+    }
+  }
+
   onMount(async () => {
     viewer = new Viewer("orbpro", {
       timeline: false,
@@ -175,6 +191,11 @@
     resetScenario();
     viewer.extend(viewerReferenceFrameMixin);
     viewer.referenceFrame = 1;
+    viewer.camera.position = new Cartesian3(
+      53307327.59909529,
+      -27405954.912846245,
+      7306669.414005669
+    );
     updateOrbit();
   });
 
@@ -184,6 +205,9 @@
         viewer.dataSources.remove(satDataSource);
         viewer.destroy();
       } catch (e) {}
+    }
+    if (viewer && viewer.clock.onTick) {
+      viewer.clock.onTick.removeEventListener(updateDebugPrimitiveModelMatrix);
     }
   });
 </script>
@@ -285,6 +309,16 @@
   </div>
 </div>
 
+<div class="debug-controls">
+  <label>
+    Debug Primitive:
+    <input
+      type="checkbox"
+      bind:checked={debugPrimitiveEnabled}
+      on:change={toggleDebugPrimitive} />
+  </label>
+</div>
+
 <style>
   #orbpro {
     width: 100vw;
@@ -304,12 +338,23 @@
     font-size: 0.8rem;
   }
 
-  .controls label {
+  .debug-controls {
+    color: black;
+    position: fixed;
+    top: 50px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    width: 10vw;
+    min-width: 50px;
+    font-size: 0.8rem;
+  }
+
+  .controls label,
+  .debug-controls label {
     display: block;
     margin-bottom: 10px;
   }
 
-  .controls input[type="range"] {
-    width: 100%;
-  }
 </style>
