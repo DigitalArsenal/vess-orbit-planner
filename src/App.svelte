@@ -46,6 +46,8 @@
 
   let SAT;
   let coverage = true;
+  let name = getParameterByName("name") || "NEW-SAT";
+
   function getParameterByName(name) {
     const url = window.location.href;
     const param = name.replace(/[\[\]]/g, "\\$&");
@@ -61,6 +63,7 @@
     for (const attr in attributes) {
       params.set(attr, attributes[attr].value.toString());
     }
+    params.set("name", name);
     window.history.replaceState(
       {},
       "",
@@ -305,6 +308,16 @@
 <div id="orbpro"></div>
 
 <div class="controls">
+  <label
+    style="text-align:left;display:flex;gap:5px;align-items:center;justify-items:center">
+    <div>NAME</div>
+    <input
+      on:keypress={updateURLParams}
+      type="text"
+      maxlength="25"
+      style="color:white;text-align:center;padding:5px"
+      bind:value={name} />
+  </label>
   {#each Object.keys(attributes) as key}
     <label style="text-align:left">
       {attributes[key].description}
@@ -328,6 +341,8 @@
           {/if}
           <input
             type="number"
+            min={attributes[key].min}
+            max={attributes[key].max}
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
@@ -344,6 +359,8 @@
             bind:value={attributes[key].value}
             on:input={updateOrbit} />
           <input
+            min={attributes[key].min}
+            max={attributes[key].max}
             type="number"
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
@@ -358,6 +375,8 @@
             bind:value={attributes[key].value}
             on:input={updateOrbit} />
           <input
+            min={attributes[key].min}
+            max={attributes[key].max}
             type="number"
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
@@ -368,7 +387,7 @@
   <hr style="margin:10px" />
   <div style="display:flex;gap:5px;align-items:center;justify-items:center">
     <button
-      style="background:#555555;color:white;padding:5px; border-radius:5px;margin:auto;width:100%"
+      style="background:#333333;color:white;padding:5px; border-radius:5px;margin:auto;width:100%"
       on:click={resetScenario}>RESET TO VERNAL EQUINOX</button>
 
     <a href="https://gssc.esa.int/navipedia/index.php/Sidereal_Time">
