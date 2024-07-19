@@ -17,85 +17,23 @@
 
   export let viewer;
   export let dynamicTimeline;
-  export let issDataSource;
+  export let satDataSource;
 
-  let apogee = 100.0 * 1000; // Min 100 km (1 km above the Karman line)
-  let perigee = 100.0 * 1000; // Min 100 km (1 km above the Karman line)
+  let apogee = 500.0 * 1000; // 300 km
+  let perigee = 500.0 * 1000; // 100 km
   const KARMAN_LINE = 100.0 * 1000; // 100 km
   const SUPER_SYNCH = 42164.0 * 1000; // Super synchronous orbit ~ 42,164 km
-  let INCLINATION = 51.6;
+  let INCLINATION = 0;
   let RA_OF_ASC_NODE = 0;
   let ARG_OF_PERICENTER = 0;
   let MEAN_ANOMALY = 45;
   let useECCENTRICITY = false;
   let ECCENTRICITY = 0.01;
-
-  const ISS_OMM = {
-    CCSDS_OMM_VERS: 0,
-    CREATION_DATE: null,
-    ORIGINATOR: null,
-    OBJECT_NAME: "ISS (ZARYA)",
-    OBJECT_ID: "1998-067A",
-    CENTER_NAME: null,
-    REFERENCE_FRAME: 2,
-    REFERENCE_FRAME_EPOCH: null,
-    TIME_SYSTEM: 11,
-    MEAN_ELEMENT_THEORY: 0,
-    COMMENT: null,
-    EPOCH: new Date().toISOString(),
-    SEMI_MAJOR_AXIS: 0,
-    MEAN_MOTION: 15.51025615,
-    ECCENTRICITY: 0.0003349,
-    INCLINATION: 51.6355,
-    RA_OF_ASC_NODE: 150.5366,
-    ARG_OF_PERICENTER: 149.2285,
-    MEAN_ANOMALY: 210.8902,
-    GM: 0,
-    MASS: 0,
-    SOLAR_RAD_AREA: 0,
-    SOLAR_RAD_COEFF: 0,
-    DRAG_AREA: 0,
-    DRAG_COEFF: 0,
-    EPHEMERIS_TYPE: 0,
-    CLASSIFICATION_TYPE: "U",
-    NORAD_CAT_ID: 25544,
-    ELEMENT_SET_NO: 999,
-    REV_AT_EPOCH: 45244,
-    BSTAR: 0.00028217,
-    MEAN_MOTION_DOT: 0.00016275,
-    MEAN_MOTION_DDOT: 0,
-    COV_REFERENCE_FRAME: 23,
-    CX_X: 0,
-    CY_X: 0,
-    CY_Y: 0,
-    CZ_X: 0,
-    CZ_Y: 0,
-    CZ_Z: 0,
-    CX_DOT_X: 0,
-    CX_DOT_Y: 0,
-    CX_DOT_Z: 0,
-    CX_DOT_X_DOT: 0,
-    CY_DOT_X: 0,
-    CY_DOT_Y: 0,
-    CY_DOT_Z: 0,
-    CY_DOT_X_DOT: 0,
-    CY_DOT_Y_DOT: 0,
-    CZ_DOT_X: 0,
-    CZ_DOT_Y: 0,
-    CZ_DOT_Z: 0,
-    CZ_DOT_X_DOT: 0,
-    CZ_DOT_Y_DOT: 0,
-    CZ_DOT_Z_DOT: 0,
-    USER_DEFINED_BIP_0044_TYPE: 0,
-    USER_DEFINED_OBJECT_DESIGNATOR: null,
-    USER_DEFINED_EARTH_MODEL: null,
-    USER_DEFINED_EPOCH_TIMESTAMP: 0,
-    USER_DEFINED_MICROSECONDS: 0,
-  };
+  let OMM = {};
 
   const options = {
     id: "25544",
-    name: "ISS",
+    name: "SAT",
     point: {
       pixelSize: 10,
     },
@@ -115,42 +53,40 @@
     ),
   };
 
-  const ISS = new SpaceEntity(options, ISS_OMM);
+  let SAT;
 
   async function updateOrbit() {
-    ISS.position.removeAllOMM();
-    ISS_OMM.INCLINATION = INCLINATION;
-    ISS_OMM.RA_OF_ASC_NODE = RA_OF_ASC_NODE;
-    ISS_OMM.ARG_OF_PERICENTER = ARG_OF_PERICENTER;
-    ISS_OMM.MEAN_ANOMALY = MEAN_ANOMALY;
+    satDataSource.entities.removeAll();
 
-    //@ts-ignore
-    ISS.path.show = false;
-    setTimeout(() => {
-      //@ts-ignore
-      ISS.path.show = true;
-    }, 10);
+    if (useECCENTRICITY) {
+      perigee = (apogee * (1 - ECCENTRICITY)) / (1 + ECCENTRICITY);
+    }
+    if(apogee<perigee){
+      perigee = apogee;
+      updateOrbit();
+      return;
+    }
     const newOMM = await Analysis.calculateMeanElements(
       1,
-      apogee, //APOGEE,
-      perigee, //PERIGEE,
-      INCLINATION, //ISS_OMM.INCLINATION,
-      RA_OF_ASC_NODE, //ISS_OMM.RA_OF_ASC_NODE,
-      ARG_OF_PERICENTER, //ISS_OMM.ARG_OF_PERICENTER,
-      MEAN_ANOMALY, //ISS_OMM.MEAN_ANOMALY,
-      0.00028217 //ISS_OMM.BSTAR
+      apogee,
+      perigee,
+      INCLINATION,
+      RA_OF_ASC_NODE,
+      ARG_OF_PERICENTER,
+      MEAN_ANOMALY,
+      0.00028217
     );
-    const ISS2 = new SpaceEntity(
+    SAT = new SpaceEntity(
       {
         ...options,
         id: "1",
-        point: { pixelSize: 10, color: Color.BLUE },
+        point: { pixelSize: 10, color: Color.WHITE },
       },
       newOMM
     );
-    ISS2.showOrbit({ show: true });
-    issDataSource.entities.removeAll();
-    issDataSource.entities.add(ISS2);
+    SAT.showOrbit({ show: true });
+    SAT.showCoverage({ show: true });
+    satDataSource.entities.add(SAT);
     viewer.referenceFrame = 1;
   }
 
@@ -162,22 +98,19 @@
 
     globalThis.viewer = viewer;
 
-    issDataSource = new SpaceCatalogDataSource({ name: "issSource" });
-    globalThis.ISS = ISS;
-    issDataSource.entities.add(ISS);
-    ISS.showOrbit({ show: true });
-    //ISS.showCoverage({ show: true });
+    satDataSource = new SpaceCatalogDataSource({ name: "satSource" });
     dynamicTimeline = new DynamicTimeline(viewer.timeline.container, viewer);
-    viewer.dataSources.add(issDataSource);
+    viewer.dataSources.add(satDataSource);
 
     viewer.extend(viewerReferenceFrameMixin);
     viewer.referenceFrame = 1;
+    updateOrbit();
   });
 
   onDestroy(() => {
     if (viewer) {
       try {
-        viewer.dataSources.remove(issDataSource);
+        viewer.dataSources.remove(satDataSource);
         viewer.destroy();
       } catch (e) {}
     }
@@ -188,13 +121,13 @@
 
 <div class="controls">
   <label>
-    Apogee:
+    APOGEE:
     <input
       type="range"
       min={KARMAN_LINE}
       max={SUPER_SYNCH}
       bind:value={apogee}
-      on:change={updateOrbit} />
+      on:input={updateOrbit} />
     <span>{apogee}</span>
   </label>
   <label>
@@ -206,16 +139,17 @@
         max="1"
         step="0.01"
         bind:value={ECCENTRICITY}
-        on:change={updateOrbit} />
+        on:input={updateOrbit} />
       <span>{ECCENTRICITY}</span>
     {:else}
-      Perigee:
+      PERIGEE:
       <input
         type="range"
         min={KARMAN_LINE}
-        max={SUPER_SYNCH}
+        max={apogee}
         bind:value={perigee}
-        on:change={updateOrbit} />
+        on:input={updateOrbit}
+        disabled={useECCENTRICITY} />
       <span>{perigee}</span>
     {/if}
   </label>
@@ -226,37 +160,37 @@
       min="0"
       max="90"
       bind:value={INCLINATION}
-      on:change={updateOrbit} />
+      on:input={updateOrbit} />
     <span>{INCLINATION}</span>
   </label>
   <label>
-    RA_OF_ASC_NODE:
+    RIGHT ASCENSION:
     <input
       type="range"
       min="0"
       max="360"
       bind:value={RA_OF_ASC_NODE}
-      on:change={updateOrbit} />
+      on:input={updateOrbit} />
     <span>{RA_OF_ASC_NODE}</span>
   </label>
   <label>
-    Arg of Perigee:
+   ARGUMENT OF PERIGEE:
     <input
       type="range"
       min="0"
       max="360"
       bind:value={ARG_OF_PERICENTER}
-      on:change={updateOrbit} />
+      on:input={updateOrbit} />
     <span>{ARG_OF_PERICENTER}</span>
   </label>
   <label>
-    Mean Anomaly:
+    MEAN ANOMALY:
     <input
       type="range"
       min="0"
       max="360"
       bind:value={MEAN_ANOMALY}
-      on:change={updateOrbit} />
+      on:input={updateOrbit} />
     <span>{MEAN_ANOMALY}</span>
   </label>
   <label>
@@ -266,6 +200,10 @@
       bind:checked={useECCENTRICITY}
       on:change={updateOrbit} />
   </label>
+  <div>
+    Eccentricity:
+    <span>{ECCENTRICITY}</span>
+  </div>
 </div>
 
 <style>
@@ -275,13 +213,15 @@
   }
 
   .controls {
-    color:black;
+    color: black;
     position: absolute;
     top: 10px;
     left: 10px;
     background: rgba(255, 255, 255, 0.8);
     padding: 10px;
     border-radius: 5px;
+    width:20vw;
+    font-size: .8rem;
   }
 
   .controls label {
