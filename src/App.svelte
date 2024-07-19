@@ -25,51 +25,8 @@
   export let dynamicTimeline;
   export let satDataSource;
   export let debugPrimitive;
-
-  function getParameterByName(name) {
-    const url = window.location.href;
-    const param = name.replace(/[\[\]]/g, "\\$&");
-    const regex = new RegExp(`[?&]${param}(=([^&#]*)|&|#|$)`);
-    const results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return "";
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
-  }
-
-  function updateURLParams() {
-    const params = new URLSearchParams(window.location.search);
-    params.set("apogee", apogee.toString());
-    params.set("perigee", perigee.toString());
-    params.set("inclination", INCLINATION.toString());
-    params.set("ra_of_asc_node", RA_OF_ASC_NODE.toString());
-    params.set("arg_of_pericenter", ARG_OF_PERICENTER.toString());
-    params.set("mean_anomaly", MEAN_ANOMALY.toString());
-    params.set("use_eccentricity", useECCENTRICITY.toString());
-    params.set("eccentricity", ECCENTRICITY.toString());
-    params.set("epoch", EPOCH);
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}?${params}`
-    );
-  }
-
-  let apogee = parseFloat(getParameterByName("apogee")) || 500.0 * 1000;
-  let perigee = parseFloat(getParameterByName("perigee")) || 500.0 * 1000;
-  const KARMAN_LINE = 100.0 * 1000; // 100 km
-  const SUPER_SYNCH = 42164.0 * 1000; // Super synchronous orbit ~ 42,164 km
-  let INCLINATION = parseFloat(getParameterByName("inclination")) || 0;
-  let RA_OF_ASC_NODE = parseFloat(getParameterByName("ra_of_asc_node")) || 0;
-  let ARG_OF_PERICENTER =
-    parseFloat(getParameterByName("arg_of_pericenter")) || 0;
-  let MEAN_ANOMALY = parseFloat(getParameterByName("mean_anomaly")) || 0;
-  let useECCENTRICITY =
-    getParameterByName("use_eccentricity") === "true" || false;
-  let ECCENTRICITY = parseFloat(getParameterByName("eccentricity")) || 0.01;
-  let EPOCH = getParameterByName("epoch") || "2024-03-20T03:06:00.000Z";
-  let debugPrimitiveEnabled = true;
-  let updateDebugPrimitiveModelMatrix;
-
+  let showModal = false;
+  let modalContent = {};
   const options = {
     id: "0001",
     name: "SAT",
@@ -84,63 +41,186 @@
       pixelOffset: new Cartesian2(10, 0),
       scaleByDistance: new NearFarScalar(1.5e2, 1.5, 13.0e7, 0.0),
       pixelOffsetScaleByDistance: new NearFarScalar(1.5e2, 3.0, 1.5e7, 0.5),
-    }
+    },
   };
 
   let SAT;
+  let coverage = true;
+  function getParameterByName(name) {
+    const url = window.location.href;
+    const param = name.replace(/[\[\]]/g, "\\$&");
+    const regex = new RegExp(`[?&]${param}(=([^&#]*)|&|#|$)`);
+    const results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return "";
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+  }
+
+  function updateURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    for (const attr in attributes) {
+      params.set(attr, attributes[attr].value.toString());
+    }
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params}`
+    );
+  }
+
+  let attributes = {
+    apogee: {
+      value: parseFloat(getParameterByName("apogee")) || 500.0 * 1000,
+      min: 100.0 * 1000,
+      max: 42164.0 * 1000,
+      description: "APOGEE",
+      fullDescription:
+        "Apogee is the point in the orbit of an object where it is farthest from the Earth.",
+    },
+    perigee: {
+      value: parseFloat(getParameterByName("perigee")) || 500.0 * 1000,
+      min: 100.0 * 1000,
+      max: 42164.0 * 1000,
+      description: "PERIGEE",
+      fullDescription:
+        "Perigee is the point in the orbit of an object where it is nearest to the Earth.",
+    },
+    inclination: {
+      value: parseFloat(getParameterByName("inclination")) || 0,
+      min: 0,
+      max: 90,
+      description: "INCLINATION",
+      fullDescription:
+        "Inclination is the angle between the orbital plane of an object and the equatorial plane of the Earth.",
+    },
+    ra_of_asc_node: {
+      value: parseFloat(getParameterByName("ra_of_asc_node")) || 0,
+      min: 0,
+      max: 360,
+      description: "RIGHT ASCENSION",
+      fullDescription:
+        "Right Ascension of the Ascending Node (RAAN) is the angle from a reference direction to the direction of the ascending node.",
+    },
+    arg_of_pericenter: {
+      value: parseFloat(getParameterByName("arg_of_pericenter")) || 0,
+      min: 0,
+      max: 360,
+      description: "ARGUMENT OF PERIGEE",
+      fullDescription:
+        "The argument of perigee is the angle from the ascending node to the perigee, measured in the orbital plane.",
+    },
+    mean_anomaly: {
+      value: parseFloat(getParameterByName("mean_anomaly")) || 0,
+      min: 0,
+      max: 360,
+      description: "MEAN ANOMALY",
+      fullDescription:
+        "Mean Anomaly is the fraction of an orbital period that has elapsed since the last periapsis.",
+    },
+    use_eccentricity: {
+      value: getParameterByName("use_eccentricity") === "true" || false,
+      description: "USE ECCENTRICITY",
+      fullDescription:
+        "Use Eccentricity to determine if the orbit should consider the elliptical shape.",
+    },
+    eccentricity: {
+      value: parseFloat(getParameterByName("eccentricity")) || 0.01,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      description: "ECCENTRICITY",
+      fullDescription:
+        "Eccentricity is a parameter that determines the amount by which its orbit around another body deviates from a perfect circle.",
+    },
+  };
+
+  function openModal(key) {
+    modalContent = attributes[key];
+    showModal = true;
+  }
+
+  function closeModal() {
+    showModal = false;
+  }
+
+  let debugPrimitiveEnabled = true;
+  let updateDebugPrimitiveModelMatrix;
 
   async function updateOrbit() {
     let isTracked;
-    if(viewer.trackedEntity){
+    if (viewer.trackedEntity) {
       viewer.trackedEntity = null;
       isTracked = true;
     }
-    satDataSource.entities.removeAll();
+    satDataSource.entities.remove(SAT);
+    if (satDataSource.entities.owner._coverageGroup) {
+      console.log(satDataSource.entities.owner._coverageGroup)
+    }
 
-    if (useECCENTRICITY) {
-      perigee = Math.max(
-        (apogee * (1 - ECCENTRICITY)) / (1 + ECCENTRICITY),
-        0.01
+    if (attributes.use_eccentricity.value) {
+      attributes.perigee.value = Math.max(
+        (attributes.apogee.value * (1 - attributes.eccentricity.value)) /
+          (1 + attributes.eccentricity.value),
+        100000
+      );
+    } else {
+      attributes.eccentricity.value = Math.min(
+        0.97,
+        Math.max(
+          (attributes.apogee.value - attributes.perigee.value) /
+            (attributes.apogee.value + attributes.perigee.value),
+          0
+        )
       );
     }
 
-    if (apogee < perigee) {
-      perigee = apogee;
-      updateOrbit();
+    if (attributes.apogee.value < attributes.perigee.value) {
+      attributes.perigee.value = attributes.apogee.value;
       return;
     }
 
     const newOMM = await Analysis.calculateMeanElements(
       1,
-      apogee,
-      perigee,
-      INCLINATION,
-      RA_OF_ASC_NODE,
-      ARG_OF_PERICENTER,
-      MEAN_ANOMALY,
+      attributes.apogee.value,
+      attributes.perigee.value,
+      attributes.inclination.value,
+      attributes.ra_of_asc_node.value,
+      attributes.arg_of_pericenter.value,
+      attributes.mean_anomaly.value,
       0.0,
-      EPOCH
+      JulianDate.toIso8601(viewer.clock.currentTime)
     );
+
+    viewer.dataSources.remove(satDataSource);
+    satDataSource = new SpaceCatalogDataSource({ name: "satSource" });
+    viewer.dataSources.add(satDataSource);
+
     SAT = new SpaceEntity(
       {
         ...options,
-        id: "1",
+        id: (new Date()).getTime().toString(),
         point: { pixelSize: 10, color: Color.WHITE },
       },
       newOMM
     );
     SAT.showOrbit({ show: true });
-    SAT.showCoverage({ show: true });
+    if (coverage) {
+      SAT.showCoverage({ show: true });
+    }
+
     satDataSource.entities.add(SAT);
-    if(isTracked){
+    if (isTracked) {
       viewer.trackedEntity = SAT;
     }
     viewer.referenceFrame = 1;
     updateURLParams();
+    globalThis.SAT = SAT;
   }
 
   function resetScenario() {
-    viewer.clock.currentTime = JulianDate.fromIso8601(EPOCH);
+    viewer.clock.currentTime = JulianDate.fromIso8601(
+      "2024-03-20T03:06:00.000Z"
+    );
     viewer.clock.shouldAnimate = false;
   }
 
@@ -225,109 +305,105 @@
 <div id="orbpro"></div>
 
 <div class="controls">
-  <label>
-    APOGEE:
-    <input
-      type="range"
-      min={KARMAN_LINE}
-      max={SUPER_SYNCH}
-      bind:value={apogee}
-      on:input={updateOrbit} />
-    <span>{apogee}</span>
-  </label>
-  <label>
-    {#if useECCENTRICITY}
-      ECCENTRICITY:
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        bind:value={ECCENTRICITY}
-        on:input={updateOrbit} />
-      <span>{ECCENTRICITY}</span>
-    {:else}
-      PERIGEE:
-      <input
-        type="range"
-        min={KARMAN_LINE}
-        max={apogee}
-        bind:value={perigee}
-        on:input={updateOrbit}
-        disabled={useECCENTRICITY} />
-      <span>{perigee}</span>
-    {/if}
-  </label>
-  <label>
-    INCLINATION:
-    <input
-      type="range"
-      min="0"
-      max="90"
-      bind:value={INCLINATION}
-      on:input={updateOrbit} />
-    <span>{INCLINATION}</span>
-  </label>
-  <label>
-    RIGHT ASCENSION:
-    <input
-      type="range"
-      min="0"
-      max="360"
-      bind:value={RA_OF_ASC_NODE}
-      on:input={updateOrbit} />
-    <span>{RA_OF_ASC_NODE}</span>
-  </label>
-  <label>
-    ARGUMENT OF PERIGEE:
-    <input
-      type="range"
-      min="0"
-      max="360"
-      bind:value={ARG_OF_PERICENTER}
-      on:input={updateOrbit} />
-    <span>{ARG_OF_PERICENTER}</span>
-  </label>
-  <label>
-    MEAN ANOMALY:
-    <input
-      type="range"
-      min="0"
-      max="360"
-      bind:value={MEAN_ANOMALY}
-      on:input={updateOrbit} />
-    <span>{MEAN_ANOMALY}</span>
-  </label>
-  <label>
-    Use ECCENTRICITY:
-    <input
-      type="checkbox"
-      bind:checked={useECCENTRICITY}
-      on:change={updateOrbit} />
-  </label>
-  <div>
-    Eccentricity:
-    <span>{ECCENTRICITY}</span>
-  </div>
+  {#each Object.keys(attributes) as key}
+    <label style="text-align:left">
+      {attributes[key].description}
+      <button class="info-button" on:click={() => openModal(key)}>?</button>
+      {#if key === "use_eccentricity"}
+        <br />
+        <input
+          type="checkbox"
+          bind:checked={attributes[key].value}
+          on:change={updateOrbit} />
+      {:else if key === "eccentricity"}
+        <div style="display:flex;gap:5px">
+          {#if attributes.use_eccentricity.value}
+            <input
+              type="range"
+              min={attributes[key].min}
+              max={attributes[key].max}
+              step={attributes[key].step}
+              bind:value={attributes[key].value}
+              on:input={updateOrbit} />
+          {/if}
+          <input
+            type="number"
+            bind:value={attributes[key].value}
+            style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
+        </div>
+      {:else if key === "perigee" && attributes.use_eccentricity.value}
+        <br />
+        <span>{attributes[key].value}</span>
+      {:else if key === "perigee"}
+        <div style="display:flex;gap:5px">
+          <input
+            type="range"
+            min={attributes[key].min}
+            max={attributes[key].max}
+            bind:value={attributes[key].value}
+            on:input={updateOrbit} />
+          <input
+            type="number"
+            bind:value={attributes[key].value}
+            style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
+        </div>
+      {:else}
+        <div style="display:flex;gap:5px">
+          <input
+            style="width:50%"
+            type="range"
+            min={attributes[key].min}
+            max={attributes[key].max}
+            bind:value={attributes[key].value}
+            on:input={updateOrbit} />
+          <input
+            type="number"
+            bind:value={attributes[key].value}
+            style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
+        </div>
+      {/if}
+    </label>
+  {/each}
   <hr style="margin:10px" />
   <div>
     <button
       style="background:#555555;color:white;padding:5px; border-radius:5px"
-      on:click={resetScenario}>Reset VERNAL EQUINOX</button>
+      on:click={resetScenario}>RESET TO VERNAL EQUINOX</button>
     <br />
-    <span>{EPOCH}</span>
   </div>
 </div>
 
-<div class="debug-controls">
-  <label>
-    J2000 Reference Frame Axes
+<div class="debug-controls" style="gap:5;display:flex;flex-direction:column">
+  <div style="display:flex;flex-direction:column;margin:5px">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
+    <label> J2000 Ref Frame Axes </label>
     <input
       type="checkbox"
       bind:checked={debugPrimitiveEnabled}
       on:change={toggleDebugPrimitive} />
-  </label>
+  </div>
+  <hr/>
+  <div style="display:flex;flex-direction:column;margin:5px">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
+    <label>Coverage Geometry </label>
+    <input type="checkbox" bind:checked={coverage} on:change={updateOrbit} />
+  </div>
 </div>
+
+{#if showModal}
+  <div class="modal">
+    <div class="modal-content">
+      <div
+        style="display: flex; justify-content:space-between; position:relative;top:-15px;right:-5px">
+        <div style="padding-top:10px"><b>{modalContent.description}</b></div>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <span class="close" on:click={closeModal}>&times;</span>
+      </div>
+      <p>{modalContent.fullDescription}</p>
+    </div>
+  </div>
+{/if}
 
 <style>
   #orbpro {
@@ -343,10 +419,10 @@
     background: rgba(255, 255, 255, 0.8);
     padding: 10px;
     border-radius: 5px;
-    width: 15vw;
-    max-width: 200px;
+    width: 25vw;
+    max-width: 250px;
     min-width: 150px;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
   .debug-controls {
@@ -355,9 +431,9 @@
     top: 50px;
     right: 10px;
     background: rgba(255, 255, 255, 0.8);
-    padding: 10px;
+    padding: 8px;
     border-radius: 5px;
-    width: 10vw;
+    width: 12vw;
     min-width: 50px;
     font-size: 0.8rem;
   }
@@ -366,5 +442,55 @@
   .debug-controls label {
     display: block;
     margin-bottom: 10px;
+  }
+
+  .info-button {
+    background: none;
+    border: none;
+    color: blue;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+
+  .modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    display: flex;
+    flex-direction: column;
+    color: black;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
   }
 </style>
