@@ -134,6 +134,29 @@
     viewer.clock.shouldAnimate = false;
   }
 
+  function addReferenceFramePrimitives() {
+    try {
+      const fixedFrameToJ2000 = Transforms.computeIcrfToFixedMatrix(
+        JulianDate.fromIso8601(EPOCH)
+      );
+      const modelMatrix = Matrix4.fromRotationTranslation(
+        Matrix3.multiply(Matrix3.IDENTITY, fixedFrameToJ2000, new Matrix3()),
+        Cartesian3.ZERO
+      );
+      console.log(modelMatrix);
+      viewer.scene.primitives.add(
+        new DebugModelMatrixPrimitive({
+          modelMatrix: modelMatrix,
+          length: 30000000.0,
+          width: 4.0,
+        })
+      );
+    } catch (e) {
+      setTimeout(() => {
+        addReferenceFramePrimitives();
+      }, 1000);
+    }
+  }
   onMount(async () => {
     viewer = new Viewer("orbpro", {
       timeline: false,
@@ -147,23 +170,7 @@
     viewer.dataSources.add(satDataSource);
     viewer.scene.globe.depthTestAgainstTerrain = true;
 
-    const fixedFrameToJ2000 = Transforms.computeIcrfToFixedMatrix(
-      JulianDate.fromIso8601(EPOCH)
-    );
-    setTimeout(() => {
-      const modelMatrix = Matrix4.fromRotationTranslation(
-        Matrix3.multiply(Matrix3.IDENTITY, fixedFrameToJ2000, new Matrix3()),
-        Cartesian3.ZERO
-      );
-
-      viewer.scene.primitives.add(
-        new DebugModelMatrixPrimitive({
-          modelMatrix: modelMatrix,
-          length: 30000000.0,
-          width: 4.0,
-        })
-      );
-    }, 10);
+    addReferenceFramePrimitives();
 
     resetScenario();
     viewer.extend(viewerReferenceFrameMixin);
