@@ -154,7 +154,7 @@
     }
     satDataSource.entities.remove(SAT);
     if (satDataSource.entities.owner._coverageGroup) {
-      console.log(satDataSource.entities.owner._coverageGroup)
+      console.log(satDataSource.entities.owner._coverageGroup);
     }
 
     if (attributes.use_eccentricity.value) {
@@ -198,7 +198,7 @@
     SAT = new SpaceEntity(
       {
         ...options,
-        id: (new Date()).getTime().toString(),
+        id: new Date().getTime().toString(),
         point: { pixelSize: 10, color: Color.WHITE },
       },
       newOMM
@@ -337,6 +337,7 @@
       {:else if key === "perigee"}
         <div style="display:flex;gap:5px">
           <input
+            style="width:50%"
             type="range"
             min={attributes[key].min}
             max={attributes[key].max}
@@ -365,28 +366,36 @@
     </label>
   {/each}
   <hr style="margin:10px" />
-  <div>
+  <div style="display:flex;gap:5px;align-items:center;justify-items:center">
     <button
-      style="background:#555555;color:white;padding:5px; border-radius:5px"
+      style="background:#555555;color:white;padding:5px; border-radius:5px;margin:auto;width:100%"
       on:click={resetScenario}>RESET TO VERNAL EQUINOX</button>
+
+    <a href="https://gssc.esa.int/navipedia/index.php/Sidereal_Time">
+      <button class="info-button">?</button></a>
     <br />
   </div>
 </div>
 
 <div class="debug-controls" style="gap:5;display:flex;flex-direction:column">
-  <div style="display:flex;flex-direction:column;margin:5px">
+  <div style="display:flex;flex-direction:column;margin:5px;text-align:center">
     <!-- svelte-ignore a11y-label-has-associated-control -->
     <label> J2000 Ref Frame Axes </label>
     <input
+      style="margin:auto"
       type="checkbox"
       bind:checked={debugPrimitiveEnabled}
       on:change={toggleDebugPrimitive} />
   </div>
-  <hr/>
-  <div style="display:flex;flex-direction:column;margin:5px">
+  <hr />
+  <div style="display:flex;flex-direction:column;margin:5px;text-align:center">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label>Coverage Geometry </label>
-    <input type="checkbox" bind:checked={coverage} on:change={updateOrbit} />
+    <label>Coverage Cone </label>
+    <input
+      style="margin:auto"
+      type="checkbox"
+      bind:checked={coverage}
+      on:change={updateOrbit} />
   </div>
 </div>
 
@@ -407,8 +416,9 @@
 
 <style>
   #orbpro {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .controls {
