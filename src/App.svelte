@@ -416,12 +416,14 @@
 
 <style>
   #orbpro {
+    user-select: none;
     width: 100%;
     height: 100%;
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .controls {
+    user-select: all;
     color: black;
     position: absolute;
     top: 10px;
