@@ -11,6 +11,12 @@
     DynamicTimeline,
     viewerReferenceFrameMixin,
     Analysis,
+    DebugModelMatrixPrimitive,
+    Entity,
+    JulianDate,
+    Matrix4,
+    Transforms,
+    Matrix3,
   } from "orbpro";
   import "./style.css";
   import "orbpro/style/widgets.css";
@@ -19,17 +25,47 @@
   export let dynamicTimeline;
   export let satDataSource;
 
-  let apogee = 500.0 * 1000; // 300 km
-  let perigee = 500.0 * 1000; // 100 km
+  function getParameterByName(name) {
+    const url = window.location.href;
+    const param = name.replace(/[\[\]]/g, "\\$&");
+    const regex = new RegExp(`[?&]${param}(=([^&#]*)|&|#|$)`);
+    const results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return "";
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+  }
+
+  function updateURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    params.set("apogee", apogee.toString());
+    params.set("perigee", perigee.toString());
+    params.set("inclination", INCLINATION.toString());
+    params.set("ra_of_asc_node", RA_OF_ASC_NODE.toString());
+    params.set("arg_of_pericenter", ARG_OF_PERICENTER.toString());
+    params.set("mean_anomaly", MEAN_ANOMALY.toString());
+    params.set("use_eccentricity", useECCENTRICITY.toString());
+    params.set("eccentricity", ECCENTRICITY.toString());
+    params.set("epoch", EPOCH);
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params}`
+    );
+  }
+
+  let apogee = parseFloat(getParameterByName("apogee")) || 500.0 * 1000;
+  let perigee = parseFloat(getParameterByName("perigee")) || 500.0 * 1000;
   const KARMAN_LINE = 100.0 * 1000; // 100 km
   const SUPER_SYNCH = 42164.0 * 1000; // Super synchronous orbit ~ 42,164 km
-  let INCLINATION = 0;
-  let RA_OF_ASC_NODE = 0;
-  let ARG_OF_PERICENTER = 0;
-  let MEAN_ANOMALY = 45;
-  let useECCENTRICITY = false;
-  let ECCENTRICITY = 0.01;
-  let OMM = {};
+  let INCLINATION = parseFloat(getParameterByName("inclination")) || 0;
+  let RA_OF_ASC_NODE = parseFloat(getParameterByName("ra_of_asc_node")) || 0;
+  let ARG_OF_PERICENTER =
+    parseFloat(getParameterByName("arg_of_pericenter")) || 0;
+  let MEAN_ANOMALY = parseFloat(getParameterByName("mean_anomaly")) || 0;
+  let useECCENTRICITY =
+    getParameterByName("use_eccentricity") === "true" || false;
+  let ECCENTRICITY = parseFloat(getParameterByName("eccentricity")) || 0.01;
+  let EPOCH = getParameterByName("epoch") || "2024-03-20T03:06:00.000Z";
 
   const options = {
     id: "25544",
@@ -61,11 +97,12 @@
     if (useECCENTRICITY) {
       perigee = (apogee * (1 - ECCENTRICITY)) / (1 + ECCENTRICITY);
     }
-    if(apogee<perigee){
+    if (apogee < perigee) {
       perigee = apogee;
       updateOrbit();
       return;
     }
+
     const newOMM = await Analysis.calculateMeanElements(
       1,
       apogee,
@@ -74,7 +111,8 @@
       RA_OF_ASC_NODE,
       ARG_OF_PERICENTER,
       MEAN_ANOMALY,
-      0.00028217
+      0.0,
+      EPOCH
     );
     SAT = new SpaceEntity(
       {
@@ -88,6 +126,12 @@
     SAT.showCoverage({ show: true });
     satDataSource.entities.add(SAT);
     viewer.referenceFrame = 1;
+    updateURLParams();
+  }
+
+  function resetScenario() {
+    viewer.clock.currentTime = JulianDate.fromIso8601(EPOCH);
+    viewer.clock.shouldAnimate = false;
   }
 
   onMount(async () => {
@@ -101,7 +145,27 @@
     satDataSource = new SpaceCatalogDataSource({ name: "satSource" });
     dynamicTimeline = new DynamicTimeline(viewer.timeline.container, viewer);
     viewer.dataSources.add(satDataSource);
+    viewer.scene.globe.depthTestAgainstTerrain = true;
 
+    const fixedFrameToJ2000 = Transforms.computeIcrfToFixedMatrix(
+      JulianDate.fromIso8601(EPOCH)
+    );
+    setTimeout(() => {
+      const modelMatrix = Matrix4.fromRotationTranslation(
+        Matrix3.multiply(Matrix3.IDENTITY, fixedFrameToJ2000, new Matrix3()),
+        Cartesian3.ZERO
+      );
+
+      viewer.scene.primitives.add(
+        new DebugModelMatrixPrimitive({
+          modelMatrix: modelMatrix,
+          length: 30000000.0,
+          width: 4.0,
+        })
+      );
+    }, 10);
+
+    resetScenario();
     viewer.extend(viewerReferenceFrameMixin);
     viewer.referenceFrame = 1;
     updateOrbit();
@@ -174,7 +238,7 @@
     <span>{RA_OF_ASC_NODE}</span>
   </label>
   <label>
-   ARGUMENT OF PERIGEE:
+    ARGUMENT OF PERIGEE:
     <input
       type="range"
       min="0"
@@ -204,6 +268,14 @@
     Eccentricity:
     <span>{ECCENTRICITY}</span>
   </div>
+  <hr style="margin:10px" />
+  <div>
+    <button
+      style="background:#555555;color:white;padding:5px; border-radius:5px"
+      on:click={resetScenario}>Reset VERNAL EQUINOX</button>
+    <br />
+    <span>{EPOCH}</span>
+  </div>
 </div>
 
 <style>
@@ -220,8 +292,9 @@
     background: rgba(255, 255, 255, 0.8);
     padding: 10px;
     border-radius: 5px;
-    width:20vw;
-    font-size: .8rem;
+    width: 15vw;
+    min-width: 200px;
+    font-size: 0.8rem;
   }
 
   .controls label {

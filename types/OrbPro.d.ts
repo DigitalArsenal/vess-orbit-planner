@@ -650,9 +650,10 @@ export namespace Analysis {
      * @param argp - The argument of perigee in radians.
      * @param mean_anomaly - The mean anomaly in radians.
      * @param bstar - The drag term.
+     * @param [epoch] - The epoch time in ISO 8601 format. If not provided, the current time will be used.
      * @returns - A promise that resolves to an object containing the mean orbital elements.
      */
-    function calculateMeanElements(id: number, apogee: number, perigee: number, inclination: number, raan: number, argp: number, mean_anomaly: number, bstar: number): Promise<object>;
+    function calculateMeanElements(id: number, apogee: number, perigee: number, inclination: number, raan: number, argp: number, mean_anomaly: number, bstar: number, epoch?: string): Promise<object>;
 }
 
 /**
