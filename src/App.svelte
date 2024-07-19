@@ -68,9 +68,10 @@
   let ECCENTRICITY = parseFloat(getParameterByName("eccentricity")) || 0.01;
   let EPOCH = getParameterByName("epoch") || "2024-03-20T03:06:00.000Z";
   let debugPrimitiveEnabled = true;
+  let updateDebugPrimitiveModelMatrix;
 
   const options = {
-    id: "25544",
+    id: "0001",
     name: "SAT",
     point: {
       pixelSize: 10,
@@ -83,17 +84,17 @@
       pixelOffset: new Cartesian2(10, 0),
       scaleByDistance: new NearFarScalar(1.5e2, 1.5, 13.0e7, 0.0),
       pixelOffsetScaleByDistance: new NearFarScalar(1.5e2, 3.0, 1.5e7, 0.5),
-    },
-    viewFrom: new Cartesian3(
-      -1678500.7493507154,
-      -17680994.63403464,
-      24667690.486357275
-    ),
+    }
   };
 
   let SAT;
 
   async function updateOrbit() {
+    let isTracked;
+    if(viewer.trackedEntity){
+      viewer.trackedEntity = null;
+      isTracked = true;
+    }
     satDataSource.entities.removeAll();
 
     if (useECCENTRICITY) {
@@ -131,6 +132,9 @@
     SAT.showOrbit({ show: true });
     SAT.showCoverage({ show: true });
     satDataSource.entities.add(SAT);
+    if(isTracked){
+      viewer.trackedEntity = SAT;
+    }
     viewer.referenceFrame = 1;
     updateURLParams();
   }
@@ -159,9 +163,11 @@
       });
 
       viewer.scene.primitives.add(debugPrimitive);
-      viewer.clock.onTick.addEventListener(() => {
-        debugPrimitive.modelMatrix = modelMatrixCallback();
-      });
+      updateDebugPrimitiveModelMatrix = viewer.clock.onTick.addEventListener(
+        () => {
+          debugPrimitive.modelMatrix = modelMatrixCallback();
+        }
+      );
     } catch (e) {
       setTimeout(() => {
         addReferenceFramePrimitives();
@@ -315,7 +321,7 @@
 
 <div class="debug-controls">
   <label>
-    Debug Primitive:
+    J2000 Reference Frame Axes
     <input
       type="checkbox"
       bind:checked={debugPrimitiveEnabled}
