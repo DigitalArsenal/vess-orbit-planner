@@ -494,7 +494,7 @@
     border-radius: 5px;
     width: 25vw;
     max-width: 250px;
-    min-width: 150px;
+    min-width: 175px;
     font-size: 0.7rem;
   }
 
@@ -507,7 +507,7 @@
     padding: 8px;
     border-radius: 5px;
     width: 12vw;
-    min-width: 50px;
+    min-width: 100px;
     font-size: 0.8rem;
   }
 
