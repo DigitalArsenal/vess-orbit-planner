@@ -111,7 +111,7 @@
     inclination: {
       value: parseFloat(getParameterByName("inclination")) || 0,
       min: 0,
-      max: 180,
+      max: 179.999999,
       description: "INCLINATION",
       fullDescription:
         "Inclination is the angle between the orbital plane of an object and the equatorial plane of the Earth.",
