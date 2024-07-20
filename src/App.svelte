@@ -368,6 +368,7 @@
             min={attributes[key].min}
             max={attributes[key].max}
             bind:value={attributes[key].value}
+            on:keyup={updateOrbit}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
       {:else if key === "perigee" && attributes.use_eccentricity.value}
@@ -386,6 +387,7 @@
             min={attributes[key].min}
             max={attributes[key].max}
             type="number"
+            on:keyup={updateOrbit}
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
@@ -403,6 +405,7 @@
             max={attributes[key].max}
             type="number"
             bind:value={attributes[key].value}
+            on:keyup={updateOrbit}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
       {/if}
