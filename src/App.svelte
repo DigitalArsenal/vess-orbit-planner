@@ -17,6 +17,7 @@
     Matrix4,
     Transforms,
     Matrix3,
+    SceneMode,
   } from "orbpro";
   import "./style.css";
   import "orbpro/style/widgets.css";
@@ -33,7 +34,7 @@
   };
 
   const satelliteName = uniqueNamesGenerator(customConfig);
-  console.log(satelliteName);
+
   export let viewer;
   export let dynamicTimeline;
   export let satDataSource;
@@ -95,7 +96,7 @@
     apogee: {
       value: parseFloat(getParameterByName("apogee")) || 500.0 * 1000,
       min: 100.0 * 1000,
-      max: 42164.0 * 1000,
+      max: 70_000.0 * 1000,
       description: "APOGEE",
       fullDescription:
         "Apogee is the point in the orbit of an object where it is farthest from the Earth.",
@@ -103,7 +104,7 @@
     perigee: {
       value: parseFloat(getParameterByName("perigee")) || 500.0 * 1000,
       min: 100.0 * 1000,
-      max: 42164.0 * 1000,
+      max: 70_000.0 * 1000,
       description: "PERIGEE",
       fullDescription:
         "Perigee is the point in the orbit of an object where it is nearest to the Earth.",
@@ -311,7 +312,17 @@
     );
     updateOrbit();
   });
-
+  function changeView(view) {
+    console.log("Changing view to:", view);
+    // Example implementation:
+    if (view === "3D") {
+      viewer.scene.mode = SceneMode.SCENE3D;
+    } else if (view === "2D") {
+      viewer.scene.mode = SceneMode.SCENE2D;
+    } else if (view === "2.5D") {
+      viewer.scene.mode = SceneMode.COLUMBUS_VIEW;
+    }
+  }
   onDestroy(() => {
     if (viewer) {
       try {
@@ -424,6 +435,13 @@
 </div>
 
 <div class="debug-controls" style="gap:5;display:flex;flex-direction:column">
+  <div
+    style="display:flex;flex-direction:row;margin:5px;text-align:center;justify-content:space-between;width:100%;">
+    <button on:click={() => changeView("3D")} style="flex:1;">3D</button>
+    <button on:click={() => changeView("2D")} style="flex:1;">2D</button>
+    <button on:click={() => changeView("2.5D")} style="flex:1;">2.5D</button>
+  </div>
+  <hr />
   <div style="display:flex;flex-direction:column;margin:5px;text-align:center">
     <!-- svelte-ignore a11y-label-has-associated-control -->
     <label> J2000 Ref Frame Axes </label>
