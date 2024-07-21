@@ -436,7 +436,7 @@
 
 <div class="debug-controls" style="gap:5;display:flex;flex-direction:column">
   <div
-    style="display:flex;flex-direction:row;margin:5px;text-align:center;justify-content:space-between;width:100%;">
+    style="display:flex;flex-direction:row;text-align:center;justify-content:space-between;width:100%;">
     <button on:click={() => changeView("3D")} style="flex:1;">3D</button>
     <button on:click={() => changeView("2D")} style="flex:1;">2D</button>
     <button on:click={() => changeView("2.5D")} style="flex:1;">2.5D</button>
