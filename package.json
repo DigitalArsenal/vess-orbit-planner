@@ -19,7 +19,7 @@
     "vite-plugin-singlefile": "^2.0.2"
   },
   "dependencies": {
-    "orbpro": "^1.118.38",
+    "orbpro": "^1.118.40",
     "unique-names-generator": "^4.7.1"
   }
 }
