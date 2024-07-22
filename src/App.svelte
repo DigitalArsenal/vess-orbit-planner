@@ -337,6 +337,7 @@
       geocoder: false,
       navigationHelpButton: false,
       baseLayerPicker: false,
+      showRenderLoopErrors: false,
     });
 
     viewerReferenceFrameMixin(viewer);
