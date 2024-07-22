@@ -112,7 +112,7 @@
       value: parseFloat(getParameterByName("apogee")) || minap,
       min: minap,
       max: 70_000.0,
-      step: 0.1,
+      step: 1,
       description: "APOGEE",
       fullDescription:
         "Apogee is the point in the orbit of an object where it is farthest from the Earth.",
@@ -122,7 +122,7 @@
       value: parseFloat(getParameterByName("perigee")) || minap,
       min: minap,
       max: 70_000.0,
-      step: 0.1,
+      step: 1,
       description: "PERIGEE",
       fullDescription:
         "Perigee is the point in the orbit of an object where it is nearest to the Earth.",
@@ -222,7 +222,6 @@
       attributes.perigee.value = attributes.apogee.value;
       return;
     }
-    console.log(attributes.apogee.value, attributes.perigee.value);
 
     jsonOMM = await Analysis.calculateMeanElements(
       1,
@@ -411,12 +410,18 @@
           style="position:relative;top:2px"
           type="checkbox"
           bind:checked={attributes["use_eccentricity"].value}
-          on:change={updateOrbit} />
+          on:input={updateOrbit} />
       {/if}
       {#if key !== "use_eccentricity"}
-        {attributes[key].description}
-        ({attributes[key].units})
-        <button class="info-button" on:click={() => openModal(key)}>?</button>
+        <div style="display:flex;gap:5px">
+          <div>{attributes[key].description}</div>
+          {#if key !== "eccentricity"}
+            <div>({attributes[key].units})</div>
+          {/if}
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div class="info-button" on:click={() => openModal(key)}>?</div>
+        </div>
       {/if}
       {#if key === "eccentricity"}
         <div style="display:flex;gap:5px">
@@ -435,7 +440,7 @@
             max={attributes[key].max}
             step={attributes[key].step}
             bind:value={attributes[key].value}
-            on:keyup={updateOrbit}
+            on:input={updateOrbit}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
       {:else if key === "perigee" && attributes.use_eccentricity.value}
@@ -456,7 +461,7 @@
             max={attributes[key].max}
             step={attributes[key].step}
             type="number"
-            on:keyup={updateOrbit}
+            on:input={updateOrbit}
             bind:value={attributes[key].value}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
@@ -475,8 +480,8 @@
             max={attributes[key].max}
             step={attributes[key].step}
             type="number"
+            on:change={updateOrbit}
             bind:value={attributes[key].value}
-            on:keyup={updateOrbit}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
         </div>
       {/if}
@@ -636,6 +641,7 @@
     color: blue;
     cursor: pointer;
     margin-left: 5px;
+    width: 10px;
   }
 
   .modal {
