@@ -61,7 +61,7 @@
   let jsonOMM;
   let SAT;
   let coverage = true;
-  let useCurrentTimeAsEpoch = false;
+  let useCurrentTimeAsEpoch = getParameterByName("use_eccentricity") === "true" || false;
   let name =
     getParameterByName("name") ||
     uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
@@ -86,7 +86,7 @@
     } else {
       params.delete("name");
     }
-    params.set("useCurrentTimeAsEpoch", useCurrentTimeAsEpoch);
+    params.set("useCurrentTimeAsEpoch", useCurrentTimeAsEpoch.toString());
     window.history.replaceState(
       {},
       "",
