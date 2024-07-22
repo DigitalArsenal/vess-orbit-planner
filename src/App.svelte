@@ -103,22 +103,27 @@
 
   let attributes = {
     apogee: {
-      value: parseFloat(getParameterByName("apogee")) || 500.0 * 1000,
-      min: 100.0 * 1000,
-      max: 70_000.0 * 1000,
+      units: "km",
+      value: parseFloat(getParameterByName("apogee")) || 500.0,
+      min: 100.0,
+      max: 70_000.0,
+      step: 0.001,
       description: "APOGEE",
       fullDescription:
         "Apogee is the point in the orbit of an object where it is farthest from the Earth.",
     },
     perigee: {
-      value: parseFloat(getParameterByName("perigee")) || 500.0 * 1000,
-      min: 100.0 * 1000,
-      max: 70_000.0 * 1000,
+      units: "km",
+      value: parseFloat(getParameterByName("perigee")) || 500.0,
+      min: 100.0,
+      max: 70_000.0,
+      step: 0.001,
       description: "PERIGEE",
       fullDescription:
         "Perigee is the point in the orbit of an object where it is nearest to the Earth.",
     },
     inclination: {
+      units: "deg",
       value: parseFloat(getParameterByName("inclination")) || 0,
       min: 0,
       max: 179.999999,
@@ -127,6 +132,7 @@
         "Inclination is the angle between the orbital plane of an object and the equatorial plane of the Earth.",
     },
     ra_of_asc_node: {
+      units: "deg",
       value: parseFloat(getParameterByName("ra_of_asc_node")) || 0,
       min: 0,
       max: 360,
@@ -135,6 +141,7 @@
         "Right Ascension of the Ascending Node (RAAN) is the angle from a reference direction to the direction of the ascending node.",
     },
     arg_of_pericenter: {
+      units: "deg",
       value: parseFloat(getParameterByName("arg_of_pericenter")) || 0,
       min: 0,
       max: 360,
@@ -143,6 +150,7 @@
         "The argument of perigee is the angle from the ascending node to the perigee, measured in the orbital plane.",
     },
     mean_anomaly: {
+      units: "deg",
       value: parseFloat(getParameterByName("mean_anomaly")) || 0,
       min: 0,
       max: 360,
@@ -157,6 +165,7 @@
         "Use Eccentricity to determine if the orbit should consider the elliptical shape.",
     },
     eccentricity: {
+      units: "",
       value: parseFloat(getParameterByName("eccentricity")) || 0.01,
       min: 0,
       max: 1,
@@ -211,8 +220,8 @@
 
     jsonOMM = await Analysis.calculateMeanElements(
       1,
-      attributes.apogee.value,
-      attributes.perigee.value,
+      attributes.apogee.value * 1000,
+      attributes.perigee.value * 1000,
       attributes.inclination.value,
       attributes.ra_of_asc_node.value,
       attributes.arg_of_pericenter.value,
@@ -397,6 +406,7 @@
       {/if}
       {#if key !== "use_eccentricity"}
         {attributes[key].description}
+        ({attributes[key].units})
         <button class="info-button" on:click={() => openModal(key)}>?</button>
       {/if}
       {#if key === "eccentricity"}
@@ -414,6 +424,7 @@
             type="number"
             min={attributes[key].min}
             max={attributes[key].max}
+            step={attributes[key].step}
             bind:value={attributes[key].value}
             on:keyup={updateOrbit}
             style="width:100%;flex: 1; background-color: white; color: black; text-align: center;border-radius:5px;padding-left:15px" />
@@ -428,11 +439,13 @@
             type="range"
             min={attributes[key].min}
             max={attributes[key].max}
+            step={attributes[key].step}
             bind:value={attributes[key].value}
             on:input={updateOrbit} />
           <input
             min={attributes[key].min}
             max={attributes[key].max}
+            step={attributes[key].step}
             type="number"
             on:keyup={updateOrbit}
             bind:value={attributes[key].value}
@@ -445,11 +458,13 @@
             type="range"
             min={attributes[key].min}
             max={attributes[key].max}
+            step={attributes[key].step}
             bind:value={attributes[key].value}
             on:input={updateOrbit} />
           <input
             min={attributes[key].min}
             max={attributes[key].max}
+            step={attributes[key].step}
             type="number"
             bind:value={attributes[key].value}
             on:keyup={updateOrbit}
