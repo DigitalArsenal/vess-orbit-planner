@@ -69,7 +69,7 @@
   let SAT;
   let coverage = true;
   let useCurrentTimeAsEpoch =
-    getParameterByName("use_eccentricity") === "true" || false;
+    getParameterByName("useCurrentTimeAsEpoch") === "true" || false;
   let name =
     getParameterByName("name") ||
     uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
@@ -102,14 +102,17 @@
     );
   }
 
-  const minap = Ellipsoid.WGS84.maximumRadius / 1000 + 100.0;
+  const minap = parseFloat(
+    (Ellipsoid.WGS84.maximumRadius / 1000 + 100.0).toFixed(3)
+  );
+
   let attributes = {
     apogee: {
       units: "km",
       value: parseFloat(getParameterByName("apogee")) || minap,
       min: minap,
       max: 70_000.0,
-      step: 0.001,
+      step: 0.1,
       description: "APOGEE",
       fullDescription:
         "Apogee is the point in the orbit of an object where it is farthest from the Earth.",
@@ -119,7 +122,7 @@
       value: parseFloat(getParameterByName("perigee")) || minap,
       min: minap,
       max: 70_000.0,
-      step: 0.001,
+      step: 0.1,
       description: "PERIGEE",
       fullDescription:
         "Perigee is the point in the orbit of an object where it is nearest to the Earth.",
@@ -161,14 +164,14 @@
         "Mean Anomaly is the fraction of an orbital period that has elapsed since the last periapsis.",
     },
     use_eccentricity: {
-      value: getParameterByName("use_eccentricity") === "true" || false,
+      value: getParameterByName("use_eccentricity") !== "true" || true,
       description: "USE ECCENTRICITY",
       fullDescription:
         "Use Eccentricity to determine if the orbit should consider the elliptical shape.",
     },
     eccentricity: {
       units: "",
-      value: parseFloat(getParameterByName("eccentricity")) || 0.01,
+      value: parseFloat(getParameterByName("eccentricity")) || 0,
       min: 0,
       max: 1,
       step: 0.01,
@@ -202,7 +205,7 @@
       attributes.perigee.value = Math.max(
         (attributes.apogee.value * (1 - attributes.eccentricity.value)) /
           (1 + attributes.eccentricity.value),
-        100000
+        minap
       );
     } else {
       attributes.eccentricity.value = Math.min(
@@ -219,11 +222,12 @@
       attributes.perigee.value = attributes.apogee.value;
       return;
     }
+    console.log(attributes.apogee.value, attributes.perigee.value);
 
     jsonOMM = await Analysis.calculateMeanElements(
       1,
-      attributes.apogee.value * 1000,
-      attributes.perigee.value * 1000,
+      Math.max(minap, attributes.apogee.value * 1000),
+      Math.max(minap, attributes.perigee.value * 1000),
       attributes.inclination.value,
       attributes.ra_of_asc_node.value,
       attributes.arg_of_pericenter.value,
@@ -255,7 +259,6 @@
     if (isTracked) {
       viewer.trackedEntity = SAT;
     }
-    viewer.referenceFrame = 1;
     updateURLParams();
     globalThis.SAT = SAT;
   }
@@ -335,6 +338,8 @@
       navigationHelpButton: false,
       baseLayerPicker: false,
     });
+
+    viewerReferenceFrameMixin(viewer);
 
     globalThis.viewer = viewer;
 
@@ -502,6 +507,14 @@
     <button on:click={() => changeView("3D")} style="flex:1;">3D</button>
     <button on:click={() => changeView("2D")} style="flex:1;">2D</button>
     <button on:click={() => changeView("2.5D")} style="flex:1;">2.5D</button>
+  </div>
+  <hr />
+  <div
+    style="display:flex;flex-direction:row;text-align:center;justify-content:space-between;width:100%;">
+    <button on:click={() => (viewer.referenceFrame = 0)} style="flex:1;"
+      >Fixed</button>
+    <button on:click={() => (viewer.referenceFrame = 1)} style="flex:1;"
+      >Inertial</button>
   </div>
   <hr />
   <div style="display:flex;flex-direction:column;margin:5px;text-align:center">
