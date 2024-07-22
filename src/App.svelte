@@ -19,6 +19,7 @@
     Matrix3,
     SceneMode,
     ReferenceFrame,
+    Ellipsoid,
   } from "orbpro";
   import "./style.css";
   import "orbpro/style/widgets.css";
@@ -43,8 +44,8 @@
   let showModal = false;
   let modalContent = {};
   let positionVelocity = {
-    position: { x: 0, y: 0, z: 0 },
-    velocity: { x: 0, y: 0, z: 0 },
+    position: { x: "0", y: "0", z: "0" },
+    velocity: { x: "0", y: "0", z: "0" },
   };
 
   const options = {
@@ -101,11 +102,12 @@
     );
   }
 
+  const minap = Ellipsoid.WGS84.maximumRadius / 1000 + 100.0;
   let attributes = {
     apogee: {
       units: "km",
-      value: parseFloat(getParameterByName("apogee")) || 500.0,
-      min: 100.0,
+      value: parseFloat(getParameterByName("apogee")) || minap,
+      min: minap,
       max: 70_000.0,
       step: 0.001,
       description: "APOGEE",
@@ -114,8 +116,8 @@
     },
     perigee: {
       units: "km",
-      value: parseFloat(getParameterByName("perigee")) || 500.0,
-      min: 100.0,
+      value: parseFloat(getParameterByName("perigee")) || minap,
+      min: minap,
       max: 70_000.0,
       step: 0.001,
       description: "PERIGEE",
@@ -295,16 +297,17 @@
             viewer.clock.currentTime,
             ReferenceFrame.INERTIAL
           );
+
           positionVelocity = {
             position: {
-              x: position.x.toFixed(2),
-              y: position.y.toFixed(2),
-              z: position.z.toFixed(2),
+              x: (position.x / 1000).toFixed(2),
+              y: (position.y / 1000).toFixed(2),
+              z: (position.z / 1000).toFixed(2),
             },
             velocity: {
-              x: velocity.x.toFixed(2),
-              y: velocity.y.toFixed(2),
-              z: velocity.z.toFixed(2),
+              x: (velocity.x / 1000).toFixed(2),
+              y: (velocity.y / 1000).toFixed(2),
+              z: (velocity.z / 1000).toFixed(2),
             },
           };
         }
