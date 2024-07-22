@@ -61,6 +61,7 @@
   let jsonOMM;
   let SAT;
   let coverage = true;
+  let useCurrentTimeAsEpoch = false;
   let name =
     getParameterByName("name") ||
     uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
@@ -85,6 +86,7 @@
     } else {
       params.delete("name");
     }
+    params.set("useCurrentTimeAsEpoch", useCurrentTimeAsEpoch);
     window.history.replaceState(
       {},
       "",
@@ -212,7 +214,9 @@
       attributes.arg_of_pericenter.value,
       attributes.mean_anomaly.value,
       0.0,
-      JulianDate.toIso8601(viewer.clock.currentTime)
+      useCurrentTimeAsEpoch
+        ? JulianDate.toIso8601(viewer.clock.currentTime)
+        : "2024-03-20T03:06:00.000Z"
     );
 
     viewer.dataSources.remove(satDataSource);
@@ -312,9 +316,9 @@
     );
     updateOrbit();
   });
+
   function changeView(view) {
     console.log("Changing view to:", view);
-    // Example implementation:
     if (view === "3D") {
       viewer.scene.mode = SceneMode.SCENE3D;
     } else if (view === "2D") {
@@ -323,6 +327,7 @@
       viewer.scene.mode = SceneMode.COLUMBUS_VIEW;
     }
   }
+
   onDestroy(() => {
     if (viewer) {
       try {
@@ -422,6 +427,15 @@
       {/if}
     </label>
   {/each}
+  <hr style="margin:10px" />
+  <label>
+    <input
+      type="checkbox"
+      bind:checked={useCurrentTimeAsEpoch}
+      on:change={updateURLParams}
+    />
+    Use Current Time as Epoch
+  </label>
   <hr style="margin:10px" />
   <div style="display:flex;gap:5px;align-items:center;justify-items:center">
     <button
