@@ -18,6 +18,7 @@
     Transforms,
     Matrix3,
     SceneMode,
+    ReferenceFrame,
   } from "orbpro";
   import "./style.css";
   import "orbpro/style/widgets.css";
@@ -41,6 +42,11 @@
   export let debugPrimitive;
   let showModal = false;
   let modalContent = {};
+  let positionVelocity = {
+    position: { x: 0, y: 0, z: 0 },
+    velocity: { x: 0, y: 0, z: 0 },
+  };
+
   const options = {
     id: "0001",
     name: "SAT",
@@ -61,7 +67,8 @@
   let jsonOMM;
   let SAT;
   let coverage = true;
-  let useCurrentTimeAsEpoch = getParameterByName("use_eccentricity") === "true" || false;
+  let useCurrentTimeAsEpoch =
+    getParameterByName("use_eccentricity") === "true" || false;
   let name =
     getParameterByName("name") ||
     uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
@@ -179,9 +186,6 @@
       isTracked = true;
     }
     satDataSource.entities.remove(SAT);
-    if (satDataSource.entities.owner._coverageGroup) {
-      console.log(satDataSource.entities.owner._coverageGroup);
-    }
 
     if (attributes.use_eccentricity.value) {
       attributes.perigee.value = Math.max(
@@ -267,13 +271,33 @@
       debugPrimitive = new DebugModelMatrixPrimitive({
         modelMatrix: modelMatrixCallback(),
         length: 30000000.0,
-        width: 4.0,
+        width: 1.5,
       });
 
       viewer.scene.primitives.add(debugPrimitive);
       updateDebugPrimitiveModelMatrix = viewer.clock.onTick.addEventListener(
         () => {
           debugPrimitive.modelMatrix = modelMatrixCallback();
+          const position = SAT.position.getValueInReferenceFrame(
+            viewer.clock.currentTime,
+            ReferenceFrame.INERTIAL
+          );
+          const velocity = SAT._velocity.getValueInReferenceFrame(
+            viewer.clock.currentTime,
+            ReferenceFrame.INERTIAL
+          );
+          positionVelocity = {
+            position: {
+              x: position.x.toFixed(2),
+              y: position.y.toFixed(2),
+              z: position.z.toFixed(2),
+            },
+            velocity: {
+              x: velocity.x.toFixed(2),
+              y: velocity.y.toFixed(2),
+              z: velocity.z.toFixed(2),
+            },
+          };
         }
       );
     } catch (e) {
@@ -295,6 +319,9 @@
     viewer = new Viewer("orbpro", {
       timeline: false,
       timelineContainer: true,
+      geocoder: false,
+      navigationHelpButton: false,
+      baseLayerPicker: false,
     });
 
     globalThis.viewer = viewer;
@@ -315,6 +342,10 @@
       7306669.414005669
     );
     updateOrbit();
+    ["cesium-credit-expand-link", "cesium-credit-textContainer"].map((t) => {
+      const tt = document.getElementsByClassName(t)[0];
+      tt.parentElement.removeChild(tt);
+    });
   });
 
   function changeView(view) {
@@ -432,15 +463,14 @@
     <input
       type="checkbox"
       bind:checked={useCurrentTimeAsEpoch}
-      on:change={updateURLParams}
-    />
+      on:change={updateURLParams} />
     Use Current Time as Epoch
   </label>
   <hr style="margin:10px" />
   <div style="display:flex;gap:5px;align-items:center;justify-items:center">
     <button
-      style="background:#333333;color:white;padding:5px; border-radius:5px;margin:auto;width:100%"
-      on:click={resetScenario}>RESET TO VERNAL EQUINOX</button>
+      style="background:#333333;color:white;padding:5px; border-radius:5px;margin:auto;width:100%;font-size:.5rem"
+      on:click={resetScenario}>RESET VERNAL EQUINOX.</button>
 
     <a href="https://gssc.esa.int/navipedia/index.php/Sidereal_Time">
       <button class="info-button">?</button></a>
@@ -506,6 +536,20 @@
     </div>
   </div>
 {/if}
+<div class="position-velocity">
+  <div>
+    <p><b>Position (km):</b></p>
+    <p>x: {positionVelocity.position.x}</p>
+    <p>y: {positionVelocity.position.y}</p>
+    <p>z: {positionVelocity.position.z}</p>
+  </div>
+  <div>
+    <p><b>Velocity (km/s):</b></p>
+    <p>x: {positionVelocity.velocity.x}</p>
+    <p>y: {positionVelocity.velocity.y}</p>
+    <p>z: {positionVelocity.velocity.z}</p>
+  </div>
+</div>
 
 <style>
   * {
@@ -543,9 +587,9 @@
     background: rgba(255, 255, 255, 0.8);
     padding: 8px;
     border-radius: 5px;
-    width: 12vw;
+    width: 10vw;
     min-width: 100px;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
   .controls label,
@@ -602,5 +646,23 @@
     color: black;
     text-decoration: none;
     cursor: pointer;
+  }
+
+  .position-velocity {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 5px;
+    color: black;
+    position: fixed;
+    bottom: 50px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px;
+    border-radius: 5px;
+    text-align: left;
+    width: 10vw;
+    min-width: 100px;
+    font-size: 0.7rem;
   }
 </style>
