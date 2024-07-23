@@ -74,6 +74,9 @@
     getParameterByName("name") ||
     uniqueNamesGenerator(customConfig).toUpperCase() + "-SAT";
 
+  let pathLengthFactor =
+    parseFloat(getParameterByName("pathLengthFactor")) || 1;
+
   function getParameterByName(name) {
     const url = window.location.href;
     const param = name.replace(/[\[\]]/g, "\\$&");
@@ -93,6 +96,11 @@
       params.set("name", name);
     } else {
       params.delete("name");
+    }
+    if (pathLengthFactor > 1) {
+      params.set("pathLengthFactor", pathLengthFactor);
+    } else {
+      params.delete("pathLengthFactor");
     }
     params.set("useCurrentTimeAsEpoch", useCurrentTimeAsEpoch.toString());
     window.history.replaceState(
@@ -260,6 +268,16 @@
     }
     updateURLParams();
     globalThis.SAT = SAT;
+    setTimeout(() => {
+      let newLeadTime = (86400 * pathLengthFactor) / 2;
+      if (attributes.apogee.value < 16000) {
+        newLeadTime /= 4;
+      }
+      if (pathLengthFactor > 1) {
+        SAT.path.leadTime = newLeadTime;
+        SAT.path.trailTime = newLeadTime;
+      }
+    }, 100);
   }
 
   function resetScenario() {
@@ -386,6 +404,44 @@
     if (viewer && viewer.clock.onTick) {
       viewer.clock.onTick.removeEventListener(updateDebugPrimitiveModelMatrix);
     }
+  });
+
+  function updatepathLengthFactor(event) {
+    pathLengthFactor = parseFloat(event.target.value);
+    updateOrbit();
+  }
+
+  function makeOrbitDarker() {
+    const currentTime = JulianDate.toIso8601(viewer.clock.currentTime);
+    const epoch = JulianDate.fromIso8601(currentTime);
+
+    const fadeFactor = 0.05;
+    const orbitEntity = SAT;
+
+    if (orbitEntity && orbitEntity.path) {
+      const pathMaterial = orbitEntity.path.material;
+
+      viewer.clock.onTick.addEventListener(() => {
+        const now = viewer.clock.currentTime;
+        const secondsFromEpoch = JulianDate.secondsDifference(now, epoch);
+
+        const darknessFactor = Math.min(
+          1,
+          Math.abs(secondsFromEpoch * fadeFactor)
+        );
+
+        pathMaterial.color = new Color(
+          1.0 - darknessFactor,
+          1.0 - darknessFactor,
+          1.0 - darknessFactor,
+          1.0
+        );
+      });
+    }
+  }
+
+  onMount(() => {
+    makeOrbitDarker();
   });
 </script>
 
@@ -541,6 +597,18 @@
       type="checkbox"
       bind:checked={coverage}
       on:change={updateOrbit} />
+  </div>
+  <hr />
+  <div style="display:flex;flex-direction:column;margin:5px;text-align:center">
+    <label>Path Length</label>
+    <input
+      type="range"
+      min="1"
+      max="10"
+      step="0.01"
+      bind:value={pathLengthFactor}
+      on:input={updatepathLengthFactor} />
+    <span>{pathLengthFactor}</span>
   </div>
   <hr />
   <div style="display:flex;margin-top:15px">
